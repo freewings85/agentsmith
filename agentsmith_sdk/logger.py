@@ -77,6 +77,11 @@ class AgentSmithLogger:
              duration_ms: Optional[int] = None) -> SpanEvent:
         """通用日志方法。"""
         conversation_id, request_id = self._get_ids()
+
+        # REQUEST_START 是树根，清空栈确保 parent_span_id 为 None
+        if event_type == EventType.REQUEST_START:
+            self._span_stack.clear()
+
         parent_span_id = self._current_parent()
 
         event = SpanEvent(
