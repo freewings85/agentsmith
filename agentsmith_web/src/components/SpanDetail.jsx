@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import SpanSummary from './SpanSummary'
 
 function getSpanCategory(eventType) {
   if (eventType.startsWith('LLM')) return 'llm'
@@ -7,6 +8,14 @@ function getSpanCategory(eventType) {
   if (eventType.startsWith('HTTP')) return 'http'
   if (eventType.startsWith('SERVICE')) return 'service'
   return 'request'
+}
+
+/** 根据耗时返回速度等级 CSS 类名 */
+function getDurationClass(ms) {
+  if (ms == null) return ''
+  if (ms > 5000) return 'duration-slow'
+  if (ms > 1000) return 'duration-medium'
+  return 'duration-fast'
 }
 
 /** 根据 parent_span_id 构建树形结构，无 parent_span_id 时退化为平铺列表 */
@@ -92,6 +101,7 @@ function SpanDetail() {
         &gt; {id}
       </div>
       <h2 style={{ marginBottom: 16 }}>调用链详情</h2>
+      <SpanSummary spans={spans} />
       <div className="trace-layout">
         <div className="trace-tree">
           {treeNodes.map((node, idx) => {
@@ -108,7 +118,7 @@ function SpanDetail() {
                   <span className={`span-type ${cat}`}>{node.event_type}</span>
                   {node.name && <span className="span-name">{node.name}</span>}
                   {node.duration_ms != null && (
-                    <span className="span-duration">{node.duration_ms}ms</span>
+                    <span className={`span-duration ${getDurationClass(node.duration_ms)}`}>{node.duration_ms}ms</span>
                   )}
                 </div>
               </div>

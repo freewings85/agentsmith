@@ -1,11 +1,14 @@
 """JsonLinesWriter 与 AgentSmithLogger。"""
 
 import json
+import logging
 import os
 from typing import Any, Optional
 
 from .context import get_context
 from .models import EventType, SpanEvent
+
+_logger = logging.getLogger(__name__)
 
 
 class JsonLinesWriter:
@@ -15,12 +18,19 @@ class JsonLinesWriter:
         self.base_dir = base_dir
 
     def write(self, event: SpanEvent) -> None:
-        """写入一个事件到对应 conversation 的 events.jsonl。"""
+        """写入一个事件到对应 conversation 的 events.jsonl。
+
+        文件 I/O 异常会被记录并重新抛出。
+        """
         conv_dir = os.path.join(self.base_dir, event.conversation_id)
-        os.makedirs(conv_dir, exist_ok=True)
-        file_path = os.path.join(conv_dir, "events.jsonl")
-        with open(file_path, "a", encoding="utf-8") as f:
-            f.write(event.to_json() + "\n")
+        try:
+            os.makedirs(conv_dir, exist_ok=True)
+            file_path = os.path.join(conv_dir, "events.jsonl")
+            with open(file_path, "a", encoding="utf-8") as f:
+                f.write(event.to_json() + "\n")
+        except OSError as e:
+            _logger.error("写入事件失败 %s: %s", conv_dir, e)
+            raise
 
 
 # _START 类型事件，需要推入栈

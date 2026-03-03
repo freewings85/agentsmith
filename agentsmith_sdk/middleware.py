@@ -1,9 +1,12 @@
 """LangChain AgentMiddleware 集成。"""
 
+import logging
 import time
 from typing import Any
 
 import langchain_core.agents
+
+_logger = logging.getLogger(__name__)
 
 
 class AgentMiddleware:
@@ -41,9 +44,16 @@ class AgentSmithMiddleware(AgentMiddleware):
                 ]
             self.logger._log("LLM_START", name="llm", data={"input": input_data})
 
-            # 执行实际调用
+            # 执行实际调用并捕获异常
             start_time = time.time()
-            result = await call_next(messages)
+            try:
+                result = await call_next(messages)
+            except Exception as e:
+                duration_ms = int((time.time() - start_time) * 1000)
+                _logger.error("LLM 调用失败: %s", e)
+                self.logger._log("LLM_END", name="llm",
+                                 data={"error": str(e)}, duration_ms=duration_ms)
+                raise
             duration_ms = int((time.time() - start_time) * 1000)
 
             # 记录 LLM_END
