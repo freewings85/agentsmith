@@ -24,10 +24,5 @@ def push_spans(server_url: str, events: list[dict]) -> None:
         logger.error("推送 spans 请求异常 %s: %s", url, e)
         raise
 
-    # 检查 HTTP 状态码
-    try:
-        status = resp.status_code
-        if status >= 400:
-            logger.error("Server 返回 HTTP %d: %s", status, url)
-    except AttributeError:
-        pass
+    if resp.status_code >= 400:
+        logger.error("Server 返回 HTTP %d: %s", resp.status_code, url)
