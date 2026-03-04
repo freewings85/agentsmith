@@ -4,7 +4,7 @@
   "features": {
     "ghcr.io/devcontainers/features/node:1": { "version": "22" }
   },
-  "forwardPorts": [18900, 3100],
+  "forwardPorts": [8120, 3120],
   "containerEnv": {
     "AGENTSMITH_DB_URL": "mysql+pymysql://root:root@host.docker.internal:3306/agent_smith",
     "AGENTSMITH_STATIC_DIR": "${containerWorkspaceFolder}/agentsmith_web/dist"

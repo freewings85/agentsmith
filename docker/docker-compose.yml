@@ -5,7 +5,7 @@ services:
       dockerfile: docker/Dockerfile
       target: server
     ports:
-      - "18900:18900"
+      - "8120:8120"
     environment:
       AGENTSMITH_DB_URL: "mysql+pymysql://root:root@host.docker.internal:3306/agent_smith"
       AGENTSMITH_STATIC_DIR: "/app/static"
@@ -21,7 +21,7 @@ services:
     command: >
       uv run python -m agentsmith_collector
       --logs-dir /data/logs
-      --server-url http://server:18900
+      --server-url http://server:8120
     depends_on:
       server:
         condition: service_started

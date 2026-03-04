@@ -30,10 +30,10 @@ COPY --from=frontend-builder /build/dist /app/static
 ENV AGENTSMITH_STATIC_DIR=/app/static
 ENV AGENTSMITH_DB_URL=mysql+pymysql://root:root@mysql:3306/agent_smith
 
-EXPOSE 18900
+EXPOSE 8120
 
 CMD ["uv", "run", "uvicorn", "agentsmith_server.app:app", \
-     "--host", "0.0.0.0", "--port", "18900"]
+     "--host", "0.0.0.0", "--port", "8120"]
 
 # ── Stage 3b: Collector ──────────────────────────────────
 FROM python-base AS collector
@@ -42,4 +42,4 @@ STOPSIGNAL SIGTERM
 
 CMD ["uv", "run", "python", "-m", "agentsmith_collector", \
      "--logs-dir", "/data/logs", \
-     "--server-url", "http://server:18900"]
+     "--server-url", "http://server:8120"]

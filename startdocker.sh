@@ -17,4 +17,4 @@ docker compose up --build -d
 echo ""
 docker compose ps
 echo ""
-echo "AgentSmith 已启动: http://127.0.0.1:18900"
+echo "AgentSmith 已启动: http://127.0.0.1:8120"
