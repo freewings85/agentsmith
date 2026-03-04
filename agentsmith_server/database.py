@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 from sqlalchemy import (
     Column, Integer, String, DateTime, Boolean, Text, JSON,
-    Index, create_engine, text,
+    Index, UniqueConstraint, create_engine, text,
 )
 from sqlalchemy.orm import DeclarativeBase
 
@@ -58,6 +58,7 @@ class Span(Base):
     __table_args__ = (
         Index("idx_request", "request_id"),
         Index("idx_span_conversation", "conversation_id"),
+        UniqueConstraint("span_id", name="uq_span_id"),
     )
 
 
@@ -70,6 +71,34 @@ def migrate_spans_table(engine) -> None:
             conn.execute(text("ALTER TABLE spans ADD COLUMN span_id VARCHAR(255) NULL"))
         if "parent_span_id" not in col_names:
             conn.execute(text("ALTER TABLE spans ADD COLUMN parent_span_id VARCHAR(255) NULL"))
+        conn.commit()
+
+
+def migrate_spans_dedup(engine) -> None:
+    """US-015: 为 spans 表添加 span_id UNIQUE 约束（去重）。
+    先删除已有重复数据（保留每个 span_id 最小 id 的那条），再添加 UNIQUE INDEX。
+    """
+    with engine.connect() as conn:
+        # 检查 UNIQUE INDEX 是否已存在
+        indexes = conn.execute(text("SHOW INDEX FROM spans WHERE Key_name = 'uq_span_id'")).fetchall()
+        if indexes:
+            conn.commit()
+            return
+
+        # 删除重复数据：保留每个非 NULL span_id 最小 id 的行
+        conn.execute(text(
+            "DELETE s1 FROM spans s1 "
+            "INNER JOIN spans s2 "
+            "ON s1.span_id = s2.span_id "
+            "AND s1.id > s2.id "
+            "WHERE s1.span_id IS NOT NULL"
+        ))
+
+        # 添加 UNIQUE INDEX
+        try:
+            conn.execute(text("ALTER TABLE spans ADD UNIQUE INDEX uq_span_id (span_id)"))
+        except Exception:
+            pass  # 索引可能已存在
         conn.commit()
 
 
@@ -96,10 +125,10 @@ def insert_spans(engine, spans_data: list[dict]) -> None:
             event_type = span["event_type"]
             data = span.get("data") or {}
 
-            # 写入 span
+            # 写入 span（INSERT IGNORE 跳过重复 span_id）
             conn.execute(
                 text(
-                    "INSERT INTO spans (conversation_id, request_id, event_type, name, timestamp, duration_ms, data, span_id, parent_span_id) "
+                    "INSERT IGNORE INTO spans (conversation_id, request_id, event_type, name, timestamp, duration_ms, data, span_id, parent_span_id) "
                     "VALUES (:conv_id, :req_id, :event_type, :name, :ts, :duration_ms, :data, :span_id, :parent_span_id)"
                 ),
                 {
@@ -159,9 +188,13 @@ def insert_spans(engine, spans_data: list[dict]) -> None:
                     },
                 )
 
-                # 更新 conversation 的 request_count
+                # 更新 conversation 的 request_count（用 COUNT DISTINCT 避免重复推送膨胀）
                 conn.execute(
-                    text("UPDATE conversations SET request_count = request_count + 1 WHERE conversation_id = :cid"),
+                    text(
+                        "UPDATE conversations SET request_count = "
+                        "(SELECT COUNT(DISTINCT request_id) FROM requests WHERE conversation_id = :cid) "
+                        "WHERE conversation_id = :cid"
+                    ),
                     {"cid": conv_id},
                 )
             else:

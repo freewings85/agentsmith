@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine
 
-from .database import Base, migrate_spans_table
+from .database import Base, migrate_spans_table, migrate_spans_dedup
 from .routes.ingest import router as ingest_router
 from .routes.query import router as query_router
 
@@ -34,6 +34,7 @@ def create_app(engine=None) -> FastAPI:
 
     Base.metadata.create_all(engine)
     migrate_spans_table(engine)
+    migrate_spans_dedup(engine)
     app.state.engine = engine
 
     # 路由
