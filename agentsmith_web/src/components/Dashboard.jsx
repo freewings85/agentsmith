@@ -87,6 +87,16 @@ function extractInputOutput(span) {
   return { input, output, raw: data }
 }
 
+/** 将对象/字符串格式化为可读文本，\n 渲染为真换行 */
+function formatDetail(value) {
+  if (value == null) return ''
+  const text = typeof value === 'object'
+    ? JSON.stringify(value, null, 2)
+    : String(value)
+  // JSON.stringify 把换行转义成 \\n，还原为真换行
+  return text.replace(/\\n/g, '\n')
+}
+
 // ── 类型过滤选项 ─────────────────────────────────────────
 
 const SPAN_TYPE_FILTERS = [
@@ -334,21 +344,13 @@ function Dashboard() {
                 {detail.input != null && (
                   <div className="detail-section">
                     <h4>Input</h4>
-                    <pre className="detail-data">
-                      {typeof detail.input === 'object'
-                        ? JSON.stringify(detail.input, null, 2)
-                        : String(detail.input)}
-                    </pre>
+                    <pre className="detail-data">{formatDetail(detail.input)}</pre>
                   </div>
                 )}
                 {detail.output != null && (
                   <div className="detail-section">
                     <h4>Output</h4>
-                    <pre className="detail-data">
-                      {typeof detail.output === 'object'
-                        ? JSON.stringify(detail.output, null, 2)
-                        : String(detail.output)}
-                    </pre>
+                    <pre className="detail-data">{formatDetail(detail.output)}</pre>
                   </div>
                 )}
                 {!detail.input && !detail.output && detail.raw && Object.keys(detail.raw).length > 0 && (
