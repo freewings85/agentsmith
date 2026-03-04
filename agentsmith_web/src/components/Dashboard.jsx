@@ -87,14 +87,22 @@ function extractInputOutput(span) {
   return { input, output, raw: data }
 }
 
-/** 将对象/字符串格式化为可读文本，\n 渲染为真换行 */
+/** 将对象/字符串格式化为可读文本，保留真换行 */
 function formatDetail(value) {
   if (value == null) return ''
-  const text = typeof value === 'object'
-    ? JSON.stringify(value, null, 2)
-    : String(value)
-  // JSON.stringify 把换行转义成 \\n，还原为真换行
-  return text.replace(/\\n/g, '\n')
+  if (typeof value === 'string') return value
+  if (typeof value !== 'object') return String(value)
+  // 对象：每个 key-value 分段显示，字符串值直接输出（保留换行）
+  const parts = []
+  for (const [key, val] of Object.entries(value)) {
+    if (val == null) continue
+    if (typeof val === 'string') {
+      parts.push(`── ${key} ──\n${val}`)
+    } else {
+      parts.push(`── ${key} ──\n${JSON.stringify(val, null, 2)}`)
+    }
+  }
+  return parts.join('\n\n')
 }
 
 // ── 类型过滤选项 ─────────────────────────────────────────
