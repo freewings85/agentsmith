@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Server",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "agentsmith_server.app:app",
+        "--host", "0.0.0.0",
+        "--port", "18900",
+        "--reload"
+      ],
+      "env": {
+        "AGENTSMITH_DB_URL": "mysql+pymysql://root:root@host.docker.internal:3306/agent_smith"
+      },
+      "jinja": true,
+      "justMyCode": false
+    },
+    {
+      "name": "Collector",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "agentsmith_collector",
+      "args": [
+        "--logs-dir", "/data/logs",
+        "--server-url", "http://127.0.0.1:18900",
+        "--poll-interval", "5"
+      ],
+      "jinja": true,
+      "justMyCode": false
+    }
+  ]
+}
