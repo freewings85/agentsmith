@@ -2,8 +2,7 @@
   "name": "AgentSmith",
   "image": "mcr.microsoft.com/devcontainers/python:3.12",
   "features": {
-    "ghcr.io/devcontainers/features/node:1": { "version": "22" },
-    "ghcr.io/devcontainers-extra/features/uv:1": {}
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
   },
   "forwardPorts": [18900, 3100],
   "containerEnv": {
@@ -13,7 +12,7 @@
   "mounts": [
     "source=/mnt/e/Documents/github/cjml-cheap-weixiu/logs,target=/data/logs,type=bind"
   ],
-  "postCreateCommand": "uv sync && cd agentsmith_web && npm install",
+  "postCreateCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && export PATH=\"$HOME/.local/bin:$PATH\" && uv sync && cd agentsmith_web && npm install",
   "customizations": {
     "vscode": {
       "extensions": [
