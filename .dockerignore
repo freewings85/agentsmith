@@ -1,0 +1,11 @@
+.git
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+agentsmith_web/node_modules
+agentsmith_web/dist
+agentsmith_sdk
+image.png
+docker/
+.tmp/
