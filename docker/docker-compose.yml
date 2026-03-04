@@ -1,19 +1,4 @@
 services:
-  mysql:
-    image: mysql:8.0
-    command: --default-authentication-plugin=mysql_native_password
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: agent_smith
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
-      interval: 5s
-      timeout: 3s
-      retries: 30
-      start_period: 10s
-
   server:
     build:
       context: ..
@@ -22,11 +7,8 @@ services:
     ports:
       - "18900:18900"
     environment:
-      AGENTSMITH_DB_URL: "mysql+pymysql://root:root@mysql:3306/agent_smith"
+      AGENTSMITH_DB_URL: "mysql+pymysql://root:root@host.docker.internal:3306/agent_smith"
       AGENTSMITH_STATIC_DIR: "/app/static"
-    depends_on:
-      mysql:
-        condition: service_healthy
     restart: unless-stopped
 
   collector:
@@ -36,10 +18,11 @@ services:
       target: collector
     volumes:
       - "${LOGS_DIR:-/mnt/e/Documents/github/cjml-cheap-weixiu/logs}:/data/logs"
+    command: >
+      uv run python -m agentsmith_collector
+      --logs-dir /data/logs
+      --server-url http://server:18900
     depends_on:
       server:
         condition: service_started
     restart: unless-stopped
-
-volumes:
-  mysql_data:
