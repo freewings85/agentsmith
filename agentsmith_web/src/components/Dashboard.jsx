@@ -119,11 +119,20 @@ function Dashboard() {
   const [reqSearch, setReqSearch] = useState('')
   const [spanTypeFilter, setSpanTypeFilter] = useState('all')
 
-  // 加载会话列表
+  // 加载会话列表（支持 ?conversation_id=xxx 自动选中）
   useEffect(() => {
     fetch('/api/conversations')
       .then(res => res.json())
-      .then(data => { setConversations(data); setLoadingConv(false) })
+      .then(data => {
+        setConversations(data)
+        setLoadingConv(false)
+        const params = new URLSearchParams(window.location.search)
+        const target = params.get('conversation_id')
+        if (target && data.some(c => c.conversation_id === target)) {
+          setSelectedConv(target)
+          setConvSearch(target)
+        }
+      })
       .catch(() => setLoadingConv(false))
   }, [])
 
