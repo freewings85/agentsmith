@@ -13,8 +13,11 @@
         "--reload"
       ],
       "env": {
-        "AGENTSMITH_DB_URL": "mysql+pymysql://root:root@host.docker.internal:3306/agent_smith"
+        "AGENTSMITH_DB_URL": "mysql+pymysql://root:root@host.docker.internal:3306/agent_smith",
+        "AGENTSMITH_STATIC_DIR": "${workspaceFolder}/agentsmith_web/dist",
+        "NO_PROXY": "localhost,127.*,10.*,192.168.*"
       },
+      "preLaunchTask": "build-frontend",
       "jinja": true,
       "justMyCode": false
     },
@@ -28,6 +31,9 @@
         "--server-url", "http://127.0.0.1:8120",
         "--poll-interval", "5"
       ],
+      "env": {
+        "NO_PROXY": "localhost,127.*,10.*,192.168.*"
+      },
       "jinja": true,
       "justMyCode": false
     }
