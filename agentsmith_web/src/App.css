@@ -348,6 +348,35 @@ body {
   overflow-y: auto;
 }
 
+/* ── 日期过滤 ── */
+.date-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px 6px;
+  flex-shrink: 0;
+}
+
+.date-filter input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 11px;
+  outline: none;
+}
+
+.date-filter input:focus {
+  border-color: #1a73e8;
+}
+
+.date-sep {
+  color: #999;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
 /* ── 耗时颜色 ── */
 .duration-slow { color: #d32f2f; font-weight: 600; }
 .duration-medium { color: #f57c00; font-weight: 500; }

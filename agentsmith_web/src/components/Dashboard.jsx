@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 // ── 工具函数 ─────────────────────────────────────────────
 
@@ -116,6 +116,8 @@ const SPAN_TYPE_FILTERS = [
   { key: 'request', label: 'Request' },
 ]
 
+const AUTO_REFRESH_MS = 5000
+
 // ── 主面板组件 ───────────────────────────────────────────
 
 function Dashboard() {
@@ -134,10 +136,42 @@ function Dashboard() {
 
   // 过滤
   const [convSearch, setConvSearch] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [reqSearch, setReqSearch] = useState('')
   const [spanTypeFilter, setSpanTypeFilter] = useState('all')
 
-  // 加载会话列表（支持 ?conversation_id=xxx 自动选中）
+  // 用 ref 保存选中状态，避免 interval 闭包过期
+  const selectedConvRef = useRef(null)
+  const selectedReqRef = useRef(null)
+  useEffect(() => { selectedConvRef.current = selectedConv }, [selectedConv])
+  useEffect(() => { selectedReqRef.current = selectedReq }, [selectedReq])
+
+  // ── 数据获取函数 ──
+  const fetchConversations = useCallback(() => {
+    fetch('/api/conversations')
+      .then(res => res.json())
+      .then(data => { setConversations(data); setLoadingConv(false) })
+      .catch(() => setLoadingConv(false))
+  }, [])
+
+  const fetchRequests = useCallback((convId) => {
+    if (!convId) return
+    fetch(`/api/conversations/${convId}/requests`)
+      .then(res => res.json())
+      .then(data => setRequests(data))
+      .catch(() => {})
+  }, [])
+
+  const fetchSpans = useCallback((reqId) => {
+    if (!reqId) return
+    fetch(`/api/requests/${reqId}/spans`)
+      .then(res => res.json())
+      .then(data => setSpans(data))
+      .catch(() => {})
+  }, [])
+
+  // 首次加载会话（支持 ?conversation_id=xxx 自动选中）
   useEffect(() => {
     fetch('/api/conversations')
       .then(res => res.json())
@@ -154,7 +188,7 @@ function Dashboard() {
       .catch(() => setLoadingConv(false))
   }, [])
 
-  // 加载请求列表
+  // 选中会话时加载请求
   useEffect(() => {
     if (!selectedConv) { setRequests([]); return }
     setLoadingReq(true)
@@ -167,7 +201,7 @@ function Dashboard() {
       .catch(() => setLoadingReq(false))
   }, [selectedConv])
 
-  // 加载 span 列表
+  // 选中请求时加载 span
   useEffect(() => {
     if (!selectedReq) { setSpans([]); return }
     setLoadingSpan(true)
@@ -178,12 +212,33 @@ function Dashboard() {
       .catch(() => setLoadingSpan(false))
   }, [selectedReq])
 
-  // 过滤后的会话
+  // ── 自动刷新 ──
+  useEffect(() => {
+    const timer = setInterval(() => {
+      fetchConversations()
+      if (selectedConvRef.current) fetchRequests(selectedConvRef.current)
+      if (selectedReqRef.current) fetchSpans(selectedReqRef.current)
+    }, AUTO_REFRESH_MS)
+    return () => clearInterval(timer)
+  }, [fetchConversations, fetchRequests, fetchSpans])
+
+  // 过滤后的会话（关键字 + 日期范围）
   const filteredConv = useMemo(() => {
-    if (!convSearch.trim()) return conversations
-    const term = convSearch.toLowerCase()
-    return conversations.filter(c => c.conversation_id.toLowerCase().includes(term))
-  }, [conversations, convSearch])
+    let list = conversations
+    if (convSearch.trim()) {
+      const term = convSearch.toLowerCase()
+      list = list.filter(c => c.conversation_id.toLowerCase().includes(term))
+    }
+    if (dateFrom) {
+      const from = new Date(dateFrom).getTime()
+      list = list.filter(c => c.last_seen && new Date(c.last_seen).getTime() >= from)
+    }
+    if (dateTo) {
+      const to = new Date(dateTo).getTime()
+      list = list.filter(c => c.last_seen && new Date(c.last_seen).getTime() <= to)
+    }
+    return list
+  }, [conversations, convSearch, dateFrom, dateTo])
 
   // 过滤后的请求
   const filteredReq = useMemo(() => {
@@ -220,6 +275,11 @@ function Dashboard() {
           value={convSearch}
           onChange={e => setConvSearch(e.target.value)}
         />
+        <div className="date-filter">
+          <input type="datetime-local" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+          <span className="date-sep">~</span>
+          <input type="datetime-local" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        </div>
         <div className="panel-list">
           {loadingConv ? <div className="panel-empty">加载中...</div> :
            filteredConv.length === 0 ? <div className="panel-empty">暂无数据</div> :
